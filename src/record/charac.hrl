@@ -1,0 +1,1 @@
+-record(charac_info {characNo=-1, characName=<<"">>, level=-1, job=-1}).

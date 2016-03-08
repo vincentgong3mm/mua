@@ -11,8 +11,7 @@
 
 %% Supervisor callbacks
 -export([
-    init/1,
-    init/2
+    init/1
     ]).
 
 %% Helper macro for declaring children of supervisor
@@ -26,13 +25,22 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
     
     
-start_child(listener) ->
-    io:format("mua_sup start_chind listener~n"),
-    supervisor:start_child(?MODULE, []).
+start_child(accept) ->
+    io:format("mua_sup start_chind accept~n"),
+    
+    Accept = {tcp_accept, {tcp_accept, start_link, []},
+                  permanent, 2000, worker, [tcp_accept]},
 
-start_child(receiver, {ClientSock, Handler}) ->
-    io:format("mua_sup start_chind receiver~n"),
-    supervisor:start_child(?MODULE, [tpc_receiver, ClientSock, Handler]).
+    supervisor:start_child(?MODULE, Accept).
+    
+%%start_child(receive, {ClientSock, Handler}) ->
+start_child(recv_packet, {ClientSock, Handler}) ->
+    io:format("mua_sup start_chind receive~n"),
+    
+    Receive = {tcp_receive, {tcp_receive, start_link, [ClientSock, Handler]},
+                  permanent, 2000, worker, [tcp_receive]},
+
+    supervisor:start_child(?MODULE, Receive).
 
 
 %% ===================================================================
@@ -41,21 +49,18 @@ start_child(receiver, {ClientSock, Handler}) ->
 
 init([]) ->
     io:format("mua_sup int~n"),
-    {ok, {{simple_one_for_one, 5, 10}, 
-         [{testProcess, 
-          {sock_server, start_link, [10000]},
-          temporary, 1000, worker, [sock_server]}
-         ]}}.
+    RestartStrategy = one_for_one,
+    MaxRestarts = 1000,
+    MaxSecondsBetweenRestarts = 3600,
 
-init(tcp_recevier, {ClientSock, Handler}) ->
-    io:format("mua_sup int tcp_receiver ~n"),
-    {ok, {{simple_one_for_one, 5, 10}, 
-         [{testProcess, 
-          {sock_server, start_link, [ClientSock, Handler]},
-          temporary, 1000, worker, [sock_server]}
-         ]}}. 
-         
-         
-         
-    %{ok, { {one_for_one, 5, 10}, []} }.
+    SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
+    
+    Accept = {tcp_accept, {tcp_accept, start_link, [8088]},
+                  permanent, 2000, worker, [tcp_accept]},
 
+    Receive = {tcp_receive, {tcp_receive, start_link, [1000, conn_man]},
+                  permanent, 2000, worker, [tcp_receive]},
+                  
+    {ok, {SupFlags, [Accept, Receive]}}.
+    %%{ok, {SupFlags, [Accept, Receive]}}.
+    

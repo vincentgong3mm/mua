@@ -25,7 +25,7 @@ do_client_request() ->
 %% 로직 구현하는 module을 함수를 tcp또는 공통모듈에서 호출.    
 test_module_callback(Handler) ->
     Handler:init(req, state),
-    Handler:handle(recv, "---packet", state),
+    Handler:handle(recv_data, "---packet", state),
     Handler:terminate(a, b, c).
 
 %% 1. 이렇게 함수의 함수를 spawn에 넘기거나,  

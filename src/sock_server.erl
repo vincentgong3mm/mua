@@ -3,9 +3,17 @@
 
 -record(state, {socket}).
 
--export([start_link/1]).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
-
+-export([
+    start_link/1
+    ]).
+-export([
+    init/1, 
+    handle_call/3, 
+    handle_cast/2, 
+    handle_info/2, 
+    code_change/3, 
+    terminate/2
+    ]).
 
 start_link(Socket) ->
     gen_server:start_link(?MODULE, Socket, []).

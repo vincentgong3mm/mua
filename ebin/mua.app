@@ -5,5 +5,5 @@
               {applications,[kernel,stdlib]},
               {mod,{mua_app,[]}},
               {env,[]},
-              {modules,[conn_man,mua_app,mua_handler,mua_sup,sock_server,
-                        tcp]}]}.
+              {modules,[conn_man,mua_app,mua_handler,mua_sup,sock_server,tcp,
+                        tcp_accept,tcp_listener,tcp_receive]}]}.

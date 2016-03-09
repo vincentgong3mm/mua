@@ -27,11 +27,8 @@ start_link() ->
     
 start_child(accept) ->
     io:format("mua_sup start_chind accept~n"),
-    
-    Accept = {tcp_accept, {tcp_accept, start_link, []},
-                  permanent, 2000, worker, [tcp_accept]},
-
-    supervisor:start_child(?MODULE, Accept).
+   
+    supervisor:start_child(?MODULE, [8088]).
     
 %%start_child(receive, {ClientSock, Handler}) ->
 start_child(recv_packet, {ClientSock, Handler}) ->
@@ -49,18 +46,19 @@ start_child(recv_packet, {ClientSock, Handler}) ->
 
 init([]) ->
     io:format("mua_sup int~n"),
-    RestartStrategy = one_for_one,
+    RestartStrategy = simple_one_for_one,
     MaxRestarts = 1000,
     MaxSecondsBetweenRestarts = 3600,
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
     
-    Accept = {tcp_accept, {tcp_accept, start_link, [8088]},
+    Accept = {tcp_accept, {tcp_accept, start_link, []},
                   permanent, 2000, worker, [tcp_accept]},
 
-    Receive = {tcp_receive, {tcp_receive, start_link, [1000, conn_man]},
-                  permanent, 2000, worker, [tcp_receive]},
-                  
-    {ok, {SupFlags, [Accept, Receive]}}.
+    %%Receive = {tcp_receive, {tcp_receive, start_link, [1000, conn_man]},
+    %%              permanent, 2000, worker, [tcp_receive]},
+    
+    {ok, {SupFlags, [Accept]}}.              
+    %%{ok, {SupFlags, [Accept, Receive]}}.
     %%{ok, {SupFlags, [Accept, Receive]}}.
     

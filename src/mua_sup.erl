@@ -5,8 +5,8 @@
 %% API
 -export([
     start_link/0, 
-    start_child/1,
-    start_child/2
+    start_child/2,
+    start_all_child/0
     ]).
 
 %% Supervisor callbacks
@@ -23,14 +23,17 @@
 
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+start_all_child() ->
+    start_child(accept, {server1, 8088}),
+    start_child(accept, {server2, 8089}),
+    tcp_accept:accept().
     
-    
-start_child(accept) ->
+start_child(accept, {Name, Port}) ->
     io:format("mua_sup start_chind accept~n"),
    
-    supervisor:start_child(?MODULE, [8088]).
-    
-%%start_child(receive, {ClientSock, Handler}) ->
+    supervisor:start_child(?MODULE, [Name, Port]);        
+
 start_child(recv_packet, {ClientSock, Handler}) ->
     io:format("mua_sup start_chind receive~n"),
     

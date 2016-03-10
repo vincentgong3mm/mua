@@ -1,12 +1,5 @@
 -module(tcp_accept).
-
--define (debug, 1).
-
--ifdef(debug).
--define(LOG(X), io:format("{~p,~p}: ~p~n", [?MODULE,?LINE,X])).
--else.
--define(LOG(X), true).
--endif.
+-include("mua_const.hrl").
 
 -define (ACCEPT_TIMEOUT, 250).
 
@@ -34,7 +27,6 @@ init(Parent, State) ->
     loop(State2).
     
  loop(State) ->
-    %io:format("~p handle_call, accept pid=~p~n", [?MODULE, self()]),
     ?LOG(State),
     case gen_tcp:accept(State#state.listenSock) of
     {ok, ClientSock} ->
@@ -46,6 +38,7 @@ init(Parent, State) ->
         
         % loop
         ?LOG(State2),
+        
         loop(State2);
     _ ->
         

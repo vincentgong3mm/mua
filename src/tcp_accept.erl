@@ -1,68 +1,54 @@
 -module(tcp_accept).
--behaviour(gen_server).
+-include("mua_const.hrl").  % for ?LOG
 
-%% test commit 
+-define (ACCEPT_TIMEOUT, 250).
 
--record(state, {port, listenSock, log_accept_count = 0}).
+-record(state, {parent, name, handler, port, listen_sock, log_accept_count = 0}).
 
 -export([
-    start_link/2
+    start_link/3
     ]).
 -export([
-    init/1, 
-    handle_call/3, 
-    handle_cast/2, 
-    handle_info/2, 
-    code_change/3, 
-    terminate/2,
-    accept/0
+    init/2, 
+    loop/1
     ]).
 
-start_link(Name, Port) ->
-    gen_server:start_link({local, Name}, ?MODULE, [Port], []).
+start_link(Name, Handler, Port) ->
+    State = #state{name = Name, handler = Handler, port = Port},
+    proc_lib:start_link(?MODULE, init, [self(), State]).
     
-init([Port]) ->
-    {ok, ListenSock} = gen_tcp:listen(Port, [binary, {packet, 0}, 
-                                        {active, false}, {reuseaddr, true}]),
+init(Parent, State) ->
+    Port = State#state.port,
     
-    {ok, #state{port=Port, listenSock=ListenSock}}.
+    %% {packet, 0} : 좀더 찾아봐야하지만, 일반적인 소켓인 경우 0, erlang term주고 받을 때는 별도 사이즈 정의
+    %% {active, false} : acitve, passive 구분, 일반적으로 특정 길이 만큼 받을 때 passive
+    %% {reuseaddr, true} : time wait 소켓을 재사옹 하기 위해서. 하지 않으면 process종료 후 다시 listen할 때 에러발생
+    {ok, ListenSock} = gen_tcp:listen(Port, 
+                                [binary, {packet, 0}, {active, false}, {reuseaddr, true}]),
     
-
-handle_call({accept}, _From, State) ->
-    io:format("~p handle_call, accept pid=~p~n", [?MODULE, self()]),
-    case gen_tcp:accept(State#state.listenSock) of
+    State2 = State#state{parent=Parent, listen_sock=ListenSock},
+    proc_lib:init_ack(Parent, {ok, self()}),
+    loop(State2).
+    
+ loop(State) ->
+    ?LOG(State),
+    case gen_tcp:accept(State#state.listen_sock) of
     {ok, ClientSock} ->
-        State2 = State#state.log_accept_count + 1,
-        accept(),
-        {reply, State2};
+        ?LOG("connect Client"),
+        
+        % create receive process for one client.
+        tcp_receive:start_link(State#state.name, State#state.handler, ClientSock),
+        
+        Log_accept_count = State#state.log_accept_count, 
+        State2 = State#state{log_accept_count = Log_accept_count + 1},
+                
+        % loop
+        ?LOG(State2),
+        
+        loop(State2);
     _ ->
-        {reply, State}
-    end.
-
-handle_cast({accept}, State) ->
-    io:format("~p handle_cast, accept pid=~p~n", [?MODULE, self()]),
-    case gen_tcp:accept(State#state.listenSock) of
-    {ok, ClientSock} ->
-        State2 = State#state.log_accept_count + 1,
-        %accept(),
-        {noreply, State2};
-    _ ->
-        {noreply, State}
-    end.
+        
+        % send to parent, termicate process
+        ok
+   end.
     
-    
-handle_info(E, S) ->
-    io:format("unexpected: ~p~n", [E]),
-    {noreply, S}.
-    
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
- 
-terminate(normal, _State) ->
-    ok;
-terminate(_Reason, _State) ->
-    ok.
-    
-accept() ->
-    gen_server:cast(server1, {accept}).
-    %gen_server:call(server1, {accept}).

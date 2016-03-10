@@ -1,5 +1,5 @@
 -module(tcp_receive).
--include("mua_const.hrl").
+-include("mua_const.hrl").  % for ?LOG
 
 %% receve 프로세스에서 참조할 값들
 -record(state, {
@@ -11,11 +11,9 @@
     }).
 
 -export([
-    start_link/3
-    ]).
--export([
-    init/2, 
-    loop/1
+    start_link/3,
+    init/2,
+    send/2
     ]).
 
 start_link(Name, Handler, ClientSock) ->
@@ -31,9 +29,9 @@ init(Parent, State) ->
     proc_lib:init_ack(Parent, {ok, self()}),
     
     % init_ack하고 loop
-    loop(State),
+    loop(State2),
     
-    % loop가 끝나면 프로레스 종료하는 것임.
+    % loop가 끝나면 프로세스 종료하는 것임.
     ?LOG("terminate process").
     
 loop(State) ->
@@ -42,9 +40,10 @@ loop(State) ->
     Handler = State#state.handler,
     case do_recv(ClientSock) of
         {ok, BinRecv} ->
-            % call handler function
             ?LOG(BinRecv),
-            %Handler:recv_packet({ok, BinRecv}),
+            
+            % call handler function
+            Handler:dispatch({recv, ClientSock, BinRecv}),
            
             % 그냥 로그를 위해서 패킷받은 횟수 저장
             Log_receive_count = State#state.log_receive_count, 
@@ -54,9 +53,10 @@ loop(State) ->
             loop(State2);
         
         {error, close} ->
-            % call handler function
             gen_tcp:close(ClientSock),
-            %Handler:recv_packet({error, close}),
+            
+            % call handler function
+            Handler:dispatch({disconnect}),
             {error, close}
     end.    
         
@@ -65,7 +65,7 @@ do_recv(ClientSock) ->
         {ok, BinRecv} ->
             %% \r\n제거 
             case binary:match(BinRecv, [<<"\r\n">>]) of
-            {Pos, Length} ->  
+            {Pos, _Length} ->  
                 B2 = binary:part(BinRecv, {0, Pos}),
                 
                 % echo
@@ -82,4 +82,8 @@ do_recv(ClientSock) ->
             ?LOG("disconnect??"),
             {ok, list_to_binary([])}
       end.
-    
+
+%% 구현해야함 
+send(ClientSock, BinData) ->
+    gen_tcp:send(ClientSock, BinData),
+    ok.

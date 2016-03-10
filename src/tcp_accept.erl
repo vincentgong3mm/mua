@@ -1,5 +1,5 @@
 -module(tcp_accept).
--include("mua_const.hrl").
+-include("mua_const.hrl").  % for ?LOG
 
 -define (ACCEPT_TIMEOUT, 250).
 
@@ -19,6 +19,10 @@ start_link(Name, Handler, Port) ->
     
 init(Parent, State) ->
     Port = State#state.port,
+    
+    %% {packet, 0} : 좀더 찾아봐야하지만, 일반적인 소켓인 경우 0, erlang term주고 받을 때는 별도 사이즈 정의
+    %% {active, false} : acitve, passive 구분, 일반적으로 특정 길이 만큼 받을 때 passive
+    %% {reuseaddr, true} : time wait 소켓을 재사옹 하기 위해서. 하지 않으면 process종료 후 다시 listen할 때 에러발생
     {ok, ListenSock} = gen_tcp:listen(Port, 
                                 [binary, {packet, 0}, {active, false}, {reuseaddr, true}]),
     

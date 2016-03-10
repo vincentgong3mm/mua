@@ -1,5 +1,10 @@
 -module(tcp_accept).
--behaviour(gen_server).
+
+-ifdef(debug).
+-define(LOG(X), io:format("{~p,~p}: ~p~n", [?MODULE,?LINE,X])).
+-else.
+-define(LOG(X), true).
+-endif.
 
 -record(state, {port, listenSock, log_accept_count = 0}).
 
@@ -8,11 +13,6 @@
     ]).
 -export([
     init/1, 
-    handle_call/3, 
-    handle_cast/2, 
-    handle_info/2, 
-    code_change/3, 
-    terminate/2,
     accept/0
     ]).
 

@@ -83,7 +83,7 @@ do_recv(ClientSock) ->
             {ok, list_to_binary([])}
       end.
 
-%% 구현해야함 
+%% 구현해야함, send를 여기에 두는게 맞나?
 send(ClientSock, BinData) ->
     gen_tcp:send(ClientSock, BinData),
     ok.

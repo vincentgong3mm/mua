@@ -1,66 +1,55 @@
 -module(tcp_accept).
 
+-define (debug, 1).
+
 -ifdef(debug).
 -define(LOG(X), io:format("{~p,~p}: ~p~n", [?MODULE,?LINE,X])).
 -else.
 -define(LOG(X), true).
 -endif.
 
--record(state, {port, listenSock, log_accept_count = 0}).
+-define (ACCEPT_TIMEOUT, 250).
+
+-record(state, {parent, name, port, listenSock, log_accept_count = 0}).
 
 -export([
     start_link/2
     ]).
 -export([
-    init/1, 
-    accept/0
+    init/2, 
+    loop/1
     ]).
 
 start_link(Name, Port) ->
-    gen_server:start_link({local, Name}, ?MODULE, [Port], []).
+    State = #state{name=Name, port=Port},
+    proc_lib:start_link(?MODULE, init, [self(), State]).
     
-init([Port]) ->
-    {ok, ListenSock} = gen_tcp:listen(Port, [binary, {packet, 0}, 
-                                        {active, false}, {reuseaddr, true}]),
+init(Parent, State) ->
+    Port = State#state.port,
+    {ok, ListenSock} = gen_tcp:listen(Port, 
+                                [binary, {packet, 0}, {active, false}, {reuseaddr, true}]),
     
-    {ok, #state{port=Port, listenSock=ListenSock}}.
+    State2 = State#state{parent=Parent, listenSock=ListenSock},
+    proc_lib:init_ack(Parent, {ok, self()}),
+    loop(State2).
     
-
-handle_call({accept}, _From, State) ->
-    io:format("~p handle_call, accept pid=~p~n", [?MODULE, self()]),
+ loop(State) ->
+    %io:format("~p handle_call, accept pid=~p~n", [?MODULE, self()]),
+    ?LOG(State),
     case gen_tcp:accept(State#state.listenSock) of
     {ok, ClientSock} ->
-        State2 = State#state.log_accept_count + 1,
-        accept(),
-        {reply, State2};
+        Log_accept_count=State#state.log_accept_count, 
+        State2 = State#state{log_accept_count = Log_accept_count + 1},
+        
+        % spawn recv process 
+        ?LOG("connect Client"),
+        
+        % loop
+        ?LOG(State2),
+        loop(State2);
     _ ->
-        {reply, State}
-    end.
-
-handle_cast({accept}, State) ->
-    io:format("~p handle_cast, accept pid=~p~n", [?MODULE, self()]),
-    case gen_tcp:accept(State#state.listenSock) of
-    {ok, ClientSock} ->
-        State2 = State#state.log_accept_count + 1,
-        %accept(),
-        {noreply, State2};
-    _ ->
-        {noreply, State}
-    end.
+        
+        % send to parent, termicate process
+        ok
+   end.
     
-    
-handle_info(E, S) ->
-    io:format("unexpected: ~p~n", [E]),
-    {noreply, S}.
-    
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
- 
-terminate(normal, _State) ->
-    ok;
-terminate(_Reason, _State) ->
-    ok.
-    
-accept() ->
-    gen_server:cast(server1, {accept}).
-    %gen_server:call(server1, {accept}).

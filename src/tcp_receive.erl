@@ -10,6 +10,8 @@
     log_receive_count = 0   % 로그용. 패킷받은 횟수
     }).
 
+
+
 -export([
     start_link/3,
     init/2,

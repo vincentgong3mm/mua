@@ -18,12 +18,13 @@
 -record(state, {clientSocket, socketState}).
 
 start_link() ->
-    
+    ?LOG({"--------start_link-----------", self()}),
     gen_server:start_link(?MODULE,  % Module 
                         [], % Arg
                         []).    % Opt
     
 init([]) ->
+    ?LOG({"--------init-----------", self()}),
     State = #state{clientSocket = 0, socketState = 0},
     {ok, State}.
 terminate(_Reason, _State) ->
@@ -47,6 +48,7 @@ handle_cast(Request, State) ->
     {noreply, State}.
     
 handle_info({tcp, Socket, Bin}, State) ->
+    ?LOG({"--------handleInfo-----------", self()}),
     ?LOG({tcp, ",", Socket, ", ", Bin}),
     {noreply, State};
 

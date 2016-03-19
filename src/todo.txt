@@ -1,4 +1,16 @@
 
+async socket
+---------------------------------------
+A   async accept
+    - async accept 하지 않고 여러 process에서 하면 될 듯. 
+    그럼 gen_server 로 만들기 애메한데. 
+    그리고, supervisor에서 제어 가능한지 확이 필요함. gen_server로 만들고 timeout걸어도 될것 같음.   
+*A   async recv
+    - 완료
+
+A   tcp_async_receiver.erl에 gen_server의 pid를 념겨서 데이터를 받으면 로직처리 하도록 분리함.  
+    module을 넘겨서 함수를 호출 할려고 했으니, client socket여러개를 한개 process에서 처리 가능해서 
+    메시지 받으면 처리하는 process에게 넘기는 것이 더 좋을 것 같음. 
 
 
 test

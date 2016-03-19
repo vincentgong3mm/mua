@@ -15,18 +15,24 @@
    set_socket/2
 ]).
 
--record(state, {clientSocket, socketState}).
+
+-record(client_socket, {socket, state}).
+
+%%-type http_headers() :: [{binary(), iodata()}].
+
+-record(state, {
+    sockets = [] :: [] | [#client_socket{}]
+    }).
 
 start_link() ->
-    ?LOG({"--------start_link-----------", self()}),
+    State = #state{},
     gen_server:start_link(?MODULE,  % Module 
-                        [], % Arg
+                        [State], % Arg
                         []).    % Opt
-    
-init([]) ->
-    ?LOG({"--------init-----------", self()}),
-    State = #state{clientSocket = 0, socketState = 0},
-    {ok, State}.
+                            
+init([State]) ->
+    ?LOG(init),
+    {ok, State}.    
 terminate(_Reason, _State) ->
     ok.
     
@@ -35,7 +41,15 @@ set_socket(Pid, ClientSocket) ->
     gen_server:call(Pid, {set_socket, ClientSocket}).
     
 handle_call({set_socket, ClientSocket}, _From, State) ->
-    State2 = State#state{clientSocket = ClientSocket},
+    %% 새로운 socket record생성
+    NewClientSocket = #client_socket{socket = ClientSocket, state = 0},
+    
+    %% 새로운 socket + 현재까지 저장된 socket 저장
+    State2 = #state{sockets=[NewClientSocket | State#state.sockets]},
+    
+    ?LOG({handle_call, State2}),
+    
+    %% State2 = State#state{clientSocket = ClientSocket},
     
     %% ClientSocket으로 부터 발생하는 이벤트는 이 프로세서에서 받기 위한 설정
     %% ClientSocket에서 뭔가 발생하면 이 프로세스의 handle_info호출됨
@@ -47,20 +61,16 @@ handle_call({set_socket, ClientSocket}, _From, State) ->
 handle_cast(Request, State) ->
     {noreply, State}.
     
+%% 클라이언트로 부터 데이터가 왔을 때 시스템으로 부터 메시지 받음.
 handle_info({tcp, Socket, Bin}, State) ->
-    ?LOG({"--------handleInfo-----------", self()}),
     ?LOG({tcp, ",", Socket, ", ", Bin}),
     {noreply, State};
 
+%% 클라이언트가 끊어졌을 때 시스템으로 부터 메시지 받음.
 handle_info({tcp_closed, Socket}, State) ->
     ?LOG({tcp_closed, ",", Socket}),
     {noreply, State}.
 
-
-%%handle_info(Info, State) ->
-%%    {noreply, State}.
-
-    
 code_change(OldVsn, State, Extra) ->
     {ok, State}.
     

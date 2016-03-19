@@ -2,7 +2,17 @@
 -include("mua_const.hrl").
 -define (ACCEPT_TIMEOUT, 250).
 
--record(state, {parent, name, handler, port, listen_sock, log_accept_count = 0, receiver_pid}).
+%% 하다보니, 가능하면 record를 처음 만들 때 초기화 가능한게 좋은것 같음.
+%% 그렇지 않으면 type을 정할 때 | 로 undefined를 해야함.  
+-record(state, {
+    parent :: pid(), % parent pid
+    name :: atom(),  % atom 
+    handler :: module(), % module 
+    port = 0 :: non_neg_integer() ,  % >= 0 
+    listen_sock = undefined :: undefined | inet:socket(), % socket
+    log_accept_count = 0 :: non_neg_integer(),  % >= 0
+    receiver_pid = undefined :: undefined | pid()   % pid
+    }).
 
 -export([
     start_link/3
@@ -14,7 +24,7 @@
     ]).
     
 start_link(Name, Handler, Port) ->
-    State = #state{name = Name, handler = Handler, port = Port},
+    State = #state{parent = self(), name = Name, handler = Handler, port = Port},
     proc_lib:start_link(?MODULE, init, [self(), State]).
        
 init(Parent, State) ->

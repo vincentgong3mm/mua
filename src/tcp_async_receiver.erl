@@ -17,8 +17,8 @@
 
 
 -record(client_socket, {
-    socket, % 없어도되지만 테스트 용으로 추가 
-    state, 
+    socket :: inet:socket() , % 없어도되지만 테스트 용으로 추가 
+    state = none :: none | wait | closed,   % c의 enum 처럼 해봄 
     etc}).
 
 %%-type http_headers() :: [{binary(), iodata()}].
@@ -46,7 +46,7 @@ set_socket(Pid, ClientSocket) ->
     
 handle_call({set_socket, ClientSocket}, _From, State) ->
         %% 새로운 socket record생성
-        NewClientSocket = #client_socket{socket = ClientSocket, state = 0, etc = 0},
+        NewClientSocket = #client_socket{socket = ClientSocket, state = wait, etc = 0},
     
         %% 새로운 socket + 현재까지 저장된 socket 저장
         %State2 = #state{sockets=[NewClientSocket | State#state.sockets]},   % for list test

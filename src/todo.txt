@@ -9,6 +9,8 @@ A   async accept
     - 완료
 
 A   tcp_async_receiver.erl에 gen_server의 pid를 념겨서 데이터를 받으면 로직처리 하도록 분리함.  
+    module을 넘겨서 함수를 호출 할려고 했으니, client socket여러개를 한개 process에서 처리 가능해서 
+    메시지 받으면 처리하는 process에게 넘기는 것이 더 좋을 것 같음. 
 
 
 

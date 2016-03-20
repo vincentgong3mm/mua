@@ -1,7 +1,7 @@
 -module(tcp_test_async_handler).
 -include("mua_const.hrl").  % for ?LOG
+-behaviour(tcp_async_dispatcher).
 -behavior(gen_server).
--behavior(tcp_async_dispatcher).
 
 -export([
     start_link/0,
@@ -13,13 +13,24 @@
     code_change/3
 ]).
 
+-export([
+    binary_from_client/2
+]).
+
+-record(state, {
+    etc :: any()
+    }).
+
 start_link() ->
+    gen_server:start_link(?MODULE, [], []),
     ok.
-init([State]) ->
+init([]) ->
+    State = #state{etc = test_value},
     {ok, State}.
 
-dispatch(Pid, {tcp, Socket, BinRecv}) ->
-    gen_server:cast(Pid, {tcp, Socket, BinRecv}).
+binary_from_client(Pid, {Socket, BinRecv}) ->
+    gen_server:cast(Pid, {tcp, Socket, BinRecv}),
+    ok.
     
 terminate(_Reason, _State) ->
     ok.

@@ -7,7 +7,8 @@
 -record(state, {
     parent :: pid(), % parent pid
     name :: atom(),  % atom 
-    handler :: module(), % module 
+    %handler :: module(), % module
+    handler :: {module(), pid()}, % module, pid 
     port = 0 :: non_neg_integer() ,  % >= 0 
     listen_sock = undefined :: undefined | inet:socket(), % socket
     log_accept_count = 0 :: non_neg_integer(),  % >= 0
@@ -24,6 +25,7 @@
     ]).
     
 start_link(Name, Handler, Port) ->
+    State2 = #state{parent = self(), name = Name, handler = {aa, self()}, port = Port},
     State = #state{parent = self(), name = Name, handler = Handler, port = Port},
     proc_lib:start_link(?MODULE, init, [self(), State]).
        

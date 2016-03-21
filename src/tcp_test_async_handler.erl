@@ -1,7 +1,6 @@
 -module(tcp_test_async_handler).
 -include("mua_const.hrl").  % for ?LOG
--behaviour(tcp_async_dispatcher).
--behavior(gen_server).
+-behaviour(gen_server).
 
 -export([
     start_link/0,
@@ -11,10 +10,6 @@
     handle_cast/2,
     handle_info/2,
     code_change/3
-]).
-
--export([
-    binary_from_client/2
 ]).
 
 -record(state, {
@@ -27,10 +22,6 @@ start_link() ->
 init([]) ->
     State = #state{etc = test_value},
     {ok, State}.
-
-binary_from_client(Pid, {Socket, BinRecv}) ->
-    gen_server:cast(Pid, {tcp, Socket, BinRecv}),
-    ok.
     
 terminate(_Reason, _State) ->
     ok.
@@ -41,6 +32,11 @@ handle_call({}, _From, State) ->
 handle_cast({tcp, Socket, BinRecv}, State) ->
     ?LOG({handle_cast, tcp, Socket, BinRecv, State}),
     ?LOG({<<"do game logic.............">>}),
+    {noreply, State};
+
+handle_cast({tcp_closed, Socket}, State) ->
+    ?LOG({handle_cast, tcp_closed, Socket, State}),
+    ?LOG({<<"disconnected client. must exit process?.............">>}),
     {noreply, State}.
     
 %%handle_cast({}, State) ->
@@ -49,6 +45,6 @@ handle_cast({tcp, Socket, BinRecv}, State) ->
 handle_info({}, State) ->
     {noreply, State}.
     
-code_change(_OldVsn, State, _Extra) ->
+code_change(_OldVsn, State, _Extra) -> 
     {ok, State}.
 

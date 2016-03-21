@@ -1,6 +1,6 @@
 -module(tcp_async_receiver).
 -include("mua_const.hrl").  % for ?LOG
--behavior(gen_server).
+-behaviour(gen_server).
 -export([
     start_link/0,
     init/1,
@@ -45,16 +45,14 @@ set_socket(Pid, ClientSocket) ->
     gen_server:call(Pid, {set_socket, ClientSocket}).
     
 handle_call({set_socket, ClientSocket}, _From, State) ->
-        %% 새로운 socket record생성
-        NewClientSocket = #client_socket{socket = ClientSocket, state = wait, etc = 0},
+    %% 새로운 socket record생성
+    NewClientSocket = #client_socket{socket = ClientSocket, state = wait, etc = 0},
     
-        %% 새로운 socket + 현재까지 저장된 socket 저장
-        %State2 = #state{sockets=[NewClientSocket | State#state.sockets]},   % for list test
-    
+    %% 새로운 socket + 현재까지 저장된 socket 저장
+    %State2 = #state{sockets=[NewClientSocket | State#state.sockets]},   % for list test
     State2 = #state{sockets = 
                         maps:put(ClientSocket, NewClientSocket, State#state.sockets)
                     },
-    
     ?LOG({handle_call, State2}),
     
     %% State2 = State#state{clientSocket = ClientSocket},
@@ -72,6 +70,7 @@ handle_cast(Request, State) ->
 %% 클라이언트로 부터 데이터가 왔을 때 시스템으로 부터 메시지 받음.
 handle_info({tcp, Socket, Bin}, State) ->
     ?LOG({tcp, ",", Socket, ", ", Bin}),
+    
     {noreply, State};
 
 %% 클라이언트가 끊어졌을 때 시스템으로 부터 메시지 받음.

@@ -1,3 +1,9 @@
+test
+
+{ok, Pid} = tcp_test_async_handler:start_link().
+tcp_async_listener:start_link(name11, {tcp_test_async_handler, Pid}, 8088).
+
+
 
 async socket
 ---------------------------------------

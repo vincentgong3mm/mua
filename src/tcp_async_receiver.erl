@@ -1,8 +1,8 @@
 -module(tcp_async_receiver).
 -include("mua_const.hrl").  % for ?LOG
--behavior(gen_server).
+-behaviour(gen_server).
 -export([
-    start_link/0,
+    start_link/1,
     init/1,
     terminate/2,
     handle_call/3,
@@ -24,18 +24,19 @@
 %%-type http_headers() :: [{binary(), iodata()}].
 
 -record(state, {
+    handler :: {module(), pid()},   % {module, pid}
     %sockets = [] :: [] | [#client_socket{}]    % list로 테스트 하기 
     sockets = #{} :: map()  % map으로 테스트 하기 
     }).
 
-start_link() ->
-    State = #state{sockets = maps:new()},
+start_link(Handler) ->
+    State = #state{handler = Handler, sockets = maps:new()},
     gen_server:start_link(?MODULE,  % Module 
                         [State], % Arg
                         []).    % Opt
                             
 init([State]) ->
-    ?LOG(init),
+    ?LOG({init, State}),
     {ok, State}.    
 terminate(_Reason, _State) ->
     ok.
@@ -45,16 +46,21 @@ set_socket(Pid, ClientSocket) ->
     gen_server:call(Pid, {set_socket, ClientSocket}).
     
 handle_call({set_socket, ClientSocket}, _From, State) ->
-        %% 새로운 socket record생성
-        NewClientSocket = #client_socket{socket = ClientSocket, state = wait, etc = 0},
+    %% 새로운 socket record생성
+    NewClientSocket = #client_socket{socket = ClientSocket, state = wait, etc = 0},
     
-        %% 새로운 socket + 현재까지 저장된 socket 저장
-        %State2 = #state{sockets=[NewClientSocket | State#state.sockets]},   % for list test
+    %% 새로운 socket + 현재까지 저장된 socket 저장
+    %State2 = #state{sockets=[NewClientSocket | State#state.sockets]},   % for list test
     
-    State2 = #state{sockets = 
+    %% State를 유지하고 변경해야함. 아래는 잘못된것 
+    %%%State2 = #state{sockets = 
+    %%%                    maps:put(ClientSocket, NewClientSocket, State#state.sockets)
+    %%%                },
+    State2 = State#state{sockets = 
                         maps:put(ClientSocket, NewClientSocket, State#state.sockets)
-                    },
-    
+    },
+                    
+                    
     ?LOG({handle_call, State2}),
     
     %% State2 = State#state{clientSocket = ClientSocket},
@@ -71,7 +77,13 @@ handle_cast(Request, State) ->
     
 %% 클라이언트로 부터 데이터가 왔을 때 시스템으로 부터 메시지 받음.
 handle_info({tcp, Socket, Bin}, State) ->
-    ?LOG({tcp, ",", Socket, ", ", Bin}),
+    ?LOG({tcp, ",", Socket, ", ", Bin, State}),
+    
+    ?LOG(State#state.handler),
+    
+    {Module, Pid} = State#state.handler,
+    Module:binary_from_client(Pid, {Socket, Bin}),
+    
     {noreply, State};
 
 %% 클라이언트가 끊어졌을 때 시스템으로 부터 메시지 받음.
@@ -80,9 +92,11 @@ handle_info({tcp_closed, Socket}, State) ->
  
     State2 = #state{
                     sockets = maps:remove(Socket, State#state.sockets)
-                    },
-                    
+                    },                
     ?LOG(State2),
+    
+    {Module, Pid} = State#state.handler,
+    Module:disconnected_from_client(Pid, {Socket}),
     
     {noreply, State2}.
 

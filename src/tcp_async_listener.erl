@@ -7,7 +7,8 @@
 -record(state, {
     parent :: pid(), % parent pid
     name :: atom(),  % atom 
-    handler :: module(), % module 
+    %handler :: module(), % module
+    handler :: {module(), pid()}, % module, pid 
     port = 0 :: non_neg_integer() ,  % >= 0 
     listen_sock = undefined :: undefined | inet:socket(), % socket
     log_accept_count = 0 :: non_neg_integer(),  % >= 0
@@ -23,8 +24,8 @@
     loop/1
     ]).
     
-start_link(Name, Handler, Port) ->
-    State = #state{parent = self(), name = Name, handler = Handler, port = Port},
+start_link(Name, {Module, Pid}, Port) ->
+    State = #state{parent = self(), name = Name, handler = {Module, Pid}, port = Port},
     proc_lib:start_link(?MODULE, init, [self(), State]).
        
 init(Parent, State) ->
@@ -41,7 +42,7 @@ init(Parent, State) ->
     proc_lib:init_ack(Parent, {ok, self()}),
     
     %% 여러 client socket을 하나의 process에서 messgae를 받을 수 있나 테스트 하기 
-    {ok, Pid} = tcp_async_receiver:start_link(),
+    {ok, Pid} = tcp_async_receiver:start_link(State#state.handler),
     State2 = State#state{parent=Parent, listen_sock=ListenSock, receiver_pid = Pid},
     
     loop(State2).

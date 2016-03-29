@@ -15,7 +15,6 @@
 
 start_link(Name, Handler, Port) ->
     State = #state{name = Name, handler = Handler, port = Port},
-    %proc_lib:start_link(?MODULE, init, [self(), State]).
     proc_lib:start_link(?MODULE, init, [self(), State]).
     
 init(Parent, State) ->

@@ -5,10 +5,10 @@
               {applications,[kernel,stdlib]},
               {mod,{mua_app,[]}},
               {env,[]},
-              {modules,[conn_man,mua_app,mua_handler,mua_sup,sock_server,
-                        some_behaviour,tcp,tcp_accept,tcp_async_dispatcher,
-                        tcp_async_listener,tcp_async_receiver,
-                        tcp_async_server,tcp_dispatch,tcp_handler,
-                        tcp_listener,tcp_receive,tcp_test_async_handler,
-                        tcp_test_async_handler2,tcp_test_behaviour,test_u,
-                        test_uuu,usage,usage_m]}]}.
+              {modules,[band_supervisor,conn_man,mua_app,mua_handler,mua_sup,
+                        musicians,sock_server,some_behaviour,tcp,tcp_accept,
+                        tcp_async_dispatcher,tcp_async_listener,
+                        tcp_async_receiver,tcp_async_server,tcp_dispatch,
+                        tcp_handler,tcp_listener,tcp_receive,
+                        tcp_test_async_handler,tcp_test_async_handler2,
+                        tcp_test_behaviour,test_u,test_uuu,usage,usage_m]}]}.
